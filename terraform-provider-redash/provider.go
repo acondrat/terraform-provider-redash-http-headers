@@ -87,6 +87,10 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	return c, diags
 }
 
+// httpHeaders reads the optional http_headers provider argument.
+// The Terraform SDK stores map values as map[string]interface{}, so this
+// converts them to strings for the HTTP transport. An unset or empty
+// argument returns nil, and the Redash client then uses http.DefaultClient.
 func httpHeaders(d *schema.ResourceData) map[string]string {
 	raw, ok := d.GetOk("http_headers")
 	if !ok {
@@ -102,8 +106,9 @@ func httpHeaders(d *schema.ResourceData) map[string]string {
 }
 
 // headerTransport sets configured headers on each request. RoundTrip must not
-// modify the incoming request, so it clones it first. Authorization is already
-// set by the Redash client before Do, and is left in place.
+// modify the incoming request, so it clones it first. The Redash client sets
+// Authorization before it calls http.Client.Do, which then runs RoundTrip, so
+// that header is already on the request and is left in place.
 type headerTransport struct {
 	headers map[string]string
 	base    http.RoundTripper
